@@ -1,0 +1,41 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\floni\\source\\repos\\OPESY\\OPESYmarquee\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{F777DF90-A8D8-4DEA-BD93-8845D69FFB35}|OPESYmarquee.vcxproj|C:\\Users\\floni\\source\\repos\\OPESY\\OPESYmarquee\\OPESYmarquee.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{F777DF90-A8D8-4DEA-BD93-8845D69FFB35}|OPESYmarquee.vcxproj|solutionrelative:OPESYmarquee.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 0,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "OPESYmarquee.cpp",
+              "DocumentMoniker": "C:\\Users\\floni\\source\\repos\\OPESY\\OPESYmarquee\\OPESYmarquee.cpp",
+              "RelativeDocumentMoniker": "OPESYmarquee.cpp",
+              "ToolTip": "C:\\Users\\floni\\source\\repos\\OPESY\\OPESYmarquee\\OPESYmarquee.cpp",
+              "RelativeToolTip": "OPESYmarquee.cpp",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
+              "WhenOpened": "2025-09-25T02:33:50.99Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{cce594b6-0c39-4442-ba28-10c64ac7e89f}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
