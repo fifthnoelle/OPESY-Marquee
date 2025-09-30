@@ -40,6 +40,8 @@ void marquee_display() {
             }
         }
 
+
+
         this_thread::sleep_for(chrono::milliseconds(200));
     }
 }
@@ -57,6 +59,9 @@ void marquee_logic() {
                 {
                     lock_guard<mutex> lock(text_mutex);
                     marquee_text = scrolled;
+
+                    cout << "\r" << string(100, ' ') << "\r";
+                    cout << scrolled << flush;
                 }
                 this_thread::sleep_for(chrono::milliseconds(marquee_speed));
             }
@@ -127,6 +132,7 @@ int getCursorRow() {
 
 int main()
 {
+    string cmd;
     cout << "Welcome to CSOPESY!" << endl;
     cout << "Group Developers:" << endl;
     cout << "Aquino, Mark Daniels" << endl;
