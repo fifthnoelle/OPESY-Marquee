@@ -20,6 +20,10 @@ mutex text_mutex;                      // avoid race conditions
 
 atomic<bool> is_running{true};
 atomic<bool> input_active{false};
+int cursorX = 0;
+int cursorY = 0;
+int dispX = 0, dispY = 0;
+int commandX = 0, commandY = 0;
 
 // helper: move cursor to x,y
 void gotoxy(int x, int y) {
@@ -65,10 +69,11 @@ void marquee_logic() {
 
                 {
                     lock_guard<mutex> lock(text_mutex);
-                    gotoxy(5, 15);  // marquee animation row; fixed
+                    gotoxy(cursorX, cursorY);  // marquee animation row; fixed (5,15)
                     cout << "\r" << string(100, ' ') << "\r";
-                    cout << scrolled << flush;
-                    gotoxy(curX, curY);                    
+                    cout << scrolled << " " << flush;
+                    gotoxy(commandX, commandY);
+                    cout << "Command > " << flush;                    
                 }
 
                 i++;
@@ -82,6 +87,8 @@ void marquee_logic() {
 
 void input() {
     string cmd;
+    CONSOLE_SCREEN_BUFFER_INFO csbi;
+    gotoxy(commandX, commandY);
     while (is_running) {
         input_active = true;   // pause marquee updates
         gotoxy(5, 42); // cursor goes after "Command > "
@@ -97,14 +104,19 @@ void input() {
                  << " set_text        - Change marquee text\n"
                  << " set_speed       - Change marquee speed (ms)\n"
                  << " exit            - Quit program\n";
+                 gotoxy(commandX, commandY);
         }
         else if (cmd == "start_marquee") {
             marquee_running = true;
             cout << "Marquee started.\n";
+            GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
+            cursorX = csbi.dwCursorPosition.X;
+            cursorY = csbi.dwCursorPosition.Y;
         }
         else if (cmd == "stop_marquee") {
             marquee_running = false;
             cout << "Marquee stopped.\n";
+            gotoxy(commandX, commandY);
         }
         else if (cmd == "set_text") {
             cout << "Enter new marquee text: ";
@@ -113,6 +125,7 @@ void input() {
             lock_guard<mutex> lock(text_mutex);
             marquee_text = new_text;
             cout << "Text updated!\n";
+            gotoxy(commandX, commandY);
         }
         else if (cmd == "set_speed") {
             cout << "Enter speed in milliseconds: ";
@@ -121,6 +134,7 @@ void input() {
             cin.ignore(); // clear buffer
             marquee_speed = new_speed;
             cout << "Speed updated to " << new_speed << " ms.\n";
+            gotoxy(commandX, commandY);
         }
         else if (cmd == "exit") {
             cout << "Exiting program. Goodbye!\n";
@@ -131,6 +145,7 @@ void input() {
         else {
             cout << "Unknown command. Type 'help' for list.\n";
         }
+        
     }
 }
 
@@ -161,6 +176,11 @@ int main()
     cout << "     " << endl;
     cout << "     " << endl;
     cout << endl;
+
+    CONSOLE_SCREEN_BUFFER_INFO csbi;
+    GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
+    commandX = csbi.dwCursorPosition.X;
+    commandY = csbi.dwCursorPosition.Y;
 
     // Threads: one updates marquee line, one scrolls text, one reads input
     thread disp(marquee_display);
