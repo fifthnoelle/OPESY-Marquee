@@ -19,6 +19,7 @@ using namespace std;
 
 // Shared state
 atomic<bool> marquee_running{false};   // whether marquee is on/off
+atomic<bool> isininput{false};
 atomic<int> marquee_speed{200};        // speed in milliseconds
 string marquee_text = "Hello, OPESY!"; // default text for marquee
 mutex text_mutex;                      // avoid race conditions
@@ -30,8 +31,7 @@ atomic<bool> input_active{false};
 int cursorX = 0;
 int cursorY = 0;
 int starteraseX = 0, starteraseY = 0;
-int enderaseX = 0, enderaseY = 0;
-int erase = 0;
+int inputX = 0, inputY = 0;
 int commandX = 0, commandY = 0;
 
 // helper: move cursor to x,y
@@ -81,7 +81,10 @@ void marquee_logic() {
                     cout << "\r" << string(100, ' ') << "\r";
                     cout << scrolled << " " << flush;
                     gotoxy(commandX, commandY);
-                    cout << "Command > " << flush;                    
+                    cout << "Command > " << flush;      
+                    if(isininput){
+                        gotoxy(inputX,inputY);
+                    }              
                 }
 
                 i++;
@@ -107,7 +110,10 @@ void input() {
         input_active = false;  // resume marquee updates
 
         if(cmd == "help"){
-
+            if(marquee_running){
+            lock_guard<mutex> lock(text_mutex);
+            gotoxy(cursorX,cursorY + 1);
+        }
             cout << "\x1B[0J" << flush;
 
             cout << "Available commands:\n"
@@ -117,11 +123,7 @@ void input() {
                  << " set_text        - Change marquee text\n"
                  << " set_speed       - Change marquee speed (ms)\n"
                  << " exit            - Quit program\n";
-            #ifdef _WIN32
-                GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
-                enderaseX = csbi.dwCursorPosition.X;
-                enderaseY = csbi.dwCursorPosition.Y;
-            #endif
+            
 
                  gotoxy(commandX, commandY);
         }
@@ -137,12 +139,6 @@ void input() {
                 cursorY = csbi.dwCursorPosition.Y;
             #endif
 
-            #ifdef _WIN32
-                GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
-                enderaseX = csbi.dwCursorPosition.X;
-                enderaseY = csbi.dwCursorPosition.Y;
-            #endif
-
 
         }
         else if (cmd == "stop_marquee") {
@@ -150,49 +146,60 @@ void input() {
             marquee_running = false;
             cout << "Marquee stopped.\n";
 
-            #ifdef _WIN32
-                GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
-                enderaseX = csbi.dwCursorPosition.X;
-                enderaseY = csbi.dwCursorPosition.Y;
-            #endif
-
             gotoxy(commandX, commandY);
         }
         else if (cmd == "set_text") {
 
-            cout << "\x1B[0J" << flush;
-
-            cout << "Enter new marquee text: ";
-            string new_text;
-            getline(cin, new_text);
+            
+            if(marquee_running){
             lock_guard<mutex> lock(text_mutex);
-            marquee_text = new_text;
-            cout << "Text updated!\n";
+            gotoxy(cursorX,cursorY + 1);
+            isininput = true;
+            }
+
+            cout << "\x1B[0J" << flush;
+            cout << "Enter new marquee text: ";
             #ifdef _WIN32
                 GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
-                enderaseX = csbi.dwCursorPosition.X;
-                enderaseY = csbi.dwCursorPosition.Y;
+                inputX = csbi.dwCursorPosition.X;
+                inputY = csbi.dwCursorPosition.Y;
             #endif
+            string new_text;
+            getline(cin, new_text);
+            marquee_text = new_text;
+            gotoxy(cursorX,cursorY + 1);
+            cout << "\x1B[0J" << flush;
+            cout << "Text updated!\n";
+            isininput = false;
+            cout << "\x1B[0J" << flush;
             
             gotoxy(commandX, commandY);
 
         }
         else if (cmd == "set_speed") {
 
-            cout << "\x1B[0J" << flush;
+            
+            if(marquee_running){
+            lock_guard<mutex> lock(text_mutex);
+            gotoxy(cursorX,cursorY + 1);
+            isininput = true;
+            }
 
+            cout << "\x1B[0J" << flush;
             cout << "Enter speed in milliseconds: ";
+            #ifdef _WIN32
+                GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
+                inputX = csbi.dwCursorPosition.X;
+                inputY = csbi.dwCursorPosition.Y;
+            #endif
             int new_speed;
             cin >> new_speed;
             cin.ignore(); // clear buffer
             marquee_speed = new_speed;
+            gotoxy(cursorX,cursorY + 1);
+            cout << "\x1B[0J" << flush;
             cout << "Speed updated to " << new_speed << " ms.\n";
-            #ifdef _WIN32
-                GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
-                enderaseX = csbi.dwCursorPosition.X;
-                enderaseY = csbi.dwCursorPosition.Y;
-            #endif
-
+            isininput = false;
             gotoxy(commandX, commandY);
         }
         else if (cmd == "exit") {
@@ -202,16 +209,15 @@ void input() {
             break;
         }
         else {
-
+            if(marquee_running){
+            lock_guard<mutex> lock(text_mutex);
+            gotoxy(cursorX,cursorY + 1);
+        }
             cout << "\x1B[0J" << flush;
 
-            cout << "Unknown command. Type 'help' for list.\n";
-            #ifdef _WIN32
-                GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
-                enderaseX = csbi.dwCursorPosition.X;
-                enderaseY = csbi.dwCursorPosition.Y;
-            #endif
+            
 
+            cout << "Unknown command. Type 'help' for list.\n";
             gotoxy(commandX, commandY);
         }
         
