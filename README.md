@@ -1,4 +1,14 @@
 # OPESY-Marquee
-Hello there are **2** projects in this repo:
-- ``OPESYmarquee`` folder which is the template
-- ``Another marquee test`` folder which is ung testing area na may progress for marquee
+## Names:
+### Aquino, Mark Daniels
+### Corpuz, Hannah Francesca
+### Sena, Sophia Pauline
+### Suizo, Danica Marie
+
+- ``OPESYmarquee`` folder containing final output = OPESYmarquee1.cpp
+``Steps: ``
+  1. CD to OPESY-Marquee folder
+  2. CD to OPESYmarquee folder
+  3. run in terminal:
+     g++ -std=c++11 -pthread OPESYmarquee1.cpp -o OPESYmarquee1
+     .\OPESYmarquee1.exe
