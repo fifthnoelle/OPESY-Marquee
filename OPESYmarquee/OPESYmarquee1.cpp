@@ -20,7 +20,6 @@ mutex text_mutex;                      // avoid race conditions
 
 atomic<bool> is_running{true};
 atomic<bool> input_active{false};
-int PROMPT_ROW;
 
 // helper: move cursor to x,y
 void gotoxy(int x, int y) {
@@ -38,9 +37,8 @@ void marquee_display() {
                 lock_guard<mutex> lock(text_mutex);
                 text = marquee_running ? marquee_text : "Stopped";
             }
+            gotoxy(5, 41);
         }
-
-
 
         this_thread::sleep_for(chrono::milliseconds(200));
     }
@@ -49,20 +47,31 @@ void marquee_display() {
 void marquee_logic() {
     while (is_running) {
         if (marquee_running) {
-            string temp;
-            {
-                lock_guard<mutex> lock(text_mutex);
-                temp = marquee_text + "   ";
-            }
-            for (size_t i = 0; i < temp.size() && is_running && marquee_running; i++) {
-                string scrolled = temp.substr(i) + temp.substr(0, i);
+            size_t i = 0;
+            while (marquee_running && is_running) {
+                string temp;
                 {
                     lock_guard<mutex> lock(text_mutex);
-                    marquee_text = scrolled;
+                    temp = marquee_text + "   "; // always read current text
+                }
 
+                string scrolled = temp.substr(i % temp.size()) + temp.substr(0, i % temp.size());
+
+                // Save cursor
+                CONSOLE_SCREEN_BUFFER_INFO csbi;
+                GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
+                int curX = csbi.dwCursorPosition.X;
+                int curY = csbi.dwCursorPosition.Y;
+
+                {
+                    lock_guard<mutex> lock(text_mutex);
+                    gotoxy(5, 15);  // marquee animation row; fixed
                     cout << "\r" << string(100, ' ') << "\r";
                     cout << scrolled << flush;
+                    gotoxy(curX, curY);                    
                 }
+
+                i++;
                 this_thread::sleep_for(chrono::milliseconds(marquee_speed));
             }
         } else {
@@ -75,7 +84,8 @@ void input() {
     string cmd;
     while (is_running) {
         input_active = true;   // pause marquee updates
-        gotoxy(10, PROMPT_ROW); // cursor goes after "Command > "
+        gotoxy(5, 42); // cursor goes after "Command > "
+        cout << "Command > " << flush;
         getline(cin, cmd);
         input_active = false;  // resume marquee updates
 
@@ -132,6 +142,7 @@ int getCursorRow() {
 
 int main()
 {
+    system("cls");
     string cmd;
     cout << "Welcome to CSOPESY!" << endl;
     cout << "Group Developers:" << endl;
@@ -147,11 +158,9 @@ int main()
     cout << " | |     \\___ \\| |  | |  ___/|  __|  \\___ \\  \\   /  " << endl;
     cout << " | |____ ____) | |__| | |    | |____ ____) |  | |   " << endl;
     cout << "  \\_____|_____/ \\____/|_|    |______|_____/   |_|   " << endl;
+    cout << "     " << endl;
+    cout << "     " << endl;
     cout << endl;
-
-    // reserve prompt row (now guaranteed to be below marquee row)
-    PROMPT_ROW = getCursorRow();
-    cout << "Command > " << endl; 
 
     // Threads: one updates marquee line, one scrolls text, one reads input
     thread disp(marquee_display);
