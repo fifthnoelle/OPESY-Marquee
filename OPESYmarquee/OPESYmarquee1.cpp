@@ -8,7 +8,12 @@
 #include <mutex>
 #include <atomic>
 #include <string>
-#include <windows.h>
+#ifdef _WIN32
+    #include <windows.h>
+#else
+    #include <sys/ioctl.h>
+    #include <unistd.h>
+#endif
 
 using namespace std;
 
@@ -20,13 +25,19 @@ mutex text_mutex;                      // avoid race conditions
 
 atomic<bool> is_running{true};
 atomic<bool> input_active{false};
+int cursorX = 0;
+int cursorY = 0;
+int dispX = 0, dispY = 0;
+int commandX = 0, commandY = 0;
 
 // helper: move cursor to x,y
 void gotoxy(int x, int y) {
     COORD coord;
     coord.X = x;
     coord.Y = y;
-    SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
+    #ifdef _WIN32
+        SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
+    #endif
 }
 
 void marquee_display() {
@@ -58,17 +69,20 @@ void marquee_logic() {
                 string scrolled = temp.substr(i % temp.size()) + temp.substr(0, i % temp.size());
 
                 // Save cursor
-                CONSOLE_SCREEN_BUFFER_INFO csbi;
-                GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
-                int curX = csbi.dwCursorPosition.X;
-                int curY = csbi.dwCursorPosition.Y;
+                #ifdef _WIN32
+                    CONSOLE_SCREEN_BUFFER_INFO csbi;
+                    GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
+                    int curX = csbi.dwCursorPosition.X;
+                    int curY = csbi.dwCursorPosition.Y;
+                #endif
 
                 {
                     lock_guard<mutex> lock(text_mutex);
-                    gotoxy(5, 15);  // marquee animation row; fixed
+                    gotoxy(cursorX, cursorY);  // marquee animation row; fixed (5,15)
                     cout << "\r" << string(100, ' ') << "\r";
-                    cout << scrolled << flush;
-                    gotoxy(curX, curY);                    
+                    cout << scrolled << " " << flush;
+                    gotoxy(commandX, commandY);
+                    cout << "Command > " << flush;                    
                 }
 
                 i++;
@@ -82,6 +96,10 @@ void marquee_logic() {
 
 void input() {
     string cmd;
+    #ifdef _WIN32
+        CONSOLE_SCREEN_BUFFER_INFO csbi;
+    #endif
+    gotoxy(commandX, commandY);
     while (is_running) {
         input_active = true;   // pause marquee updates
         gotoxy(5, 42); // cursor goes after "Command > "
@@ -97,14 +115,21 @@ void input() {
                  << " set_text        - Change marquee text\n"
                  << " set_speed       - Change marquee speed (ms)\n"
                  << " exit            - Quit program\n";
+                 gotoxy(commandX, commandY);
         }
         else if (cmd == "start_marquee") {
             marquee_running = true;
             cout << "Marquee started.\n";
+            #ifdef _WIN32
+                GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
+                cursorX = csbi.dwCursorPosition.X;
+                cursorY = csbi.dwCursorPosition.Y;
+            #endif
         }
         else if (cmd == "stop_marquee") {
             marquee_running = false;
             cout << "Marquee stopped.\n";
+            gotoxy(commandX, commandY);
         }
         else if (cmd == "set_text") {
             cout << "Enter new marquee text: ";
@@ -113,6 +138,7 @@ void input() {
             lock_guard<mutex> lock(text_mutex);
             marquee_text = new_text;
             cout << "Text updated!\n";
+            gotoxy(commandX, commandY);
         }
         else if (cmd == "set_speed") {
             cout << "Enter speed in milliseconds: ";
@@ -121,6 +147,7 @@ void input() {
             cin.ignore(); // clear buffer
             marquee_speed = new_speed;
             cout << "Speed updated to " << new_speed << " ms.\n";
+            gotoxy(commandX, commandY);
         }
         else if (cmd == "exit") {
             cout << "Exiting program. Goodbye!\n";
@@ -130,14 +157,19 @@ void input() {
         }
         else {
             cout << "Unknown command. Type 'help' for list.\n";
+            gotoxy(commandX, commandY);
         }
+        
     }
 }
 
 int getCursorRow() {
-    CONSOLE_SCREEN_BUFFER_INFO csbi;
-    GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
-    return csbi.dwCursorPosition.Y;
+    #ifdef _WIN32
+        CONSOLE_SCREEN_BUFFER_INFO csbi;
+        GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
+        return csbi.dwCursorPosition.Y;
+    #endif
+    return 0;
 }
 
 int main()
@@ -162,6 +194,12 @@ int main()
     cout << "     " << endl;
     cout << endl;
 
+    #ifdef _WIN32
+        CONSOLE_SCREEN_BUFFER_INFO csbi;
+        GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
+        commandX = csbi.dwCursorPosition.X;
+        commandY = csbi.dwCursorPosition.Y;
+    #endif
     // Threads: one updates marquee line, one scrolls text, one reads input
     thread disp(marquee_display);
     thread logic(marquee_logic);
