@@ -167,12 +167,11 @@ void input() {
             string new_text;
             getline(cin, new_text);
             marquee_text = new_text;
-            gotoxy(cursorX,cursorY + 1);
-            cout << "\x1B[0J" << flush;
+            if(marquee_running)
+                gotoxy(cursorX,cursorY + 1);
             cout << "Text updated!\n";
-            isininput = false;
             cout << "\x1B[0J" << flush;
-            
+            isininput = false;            
             gotoxy(commandX, commandY);
 
         }
@@ -196,7 +195,8 @@ void input() {
             cin >> new_speed;
             cin.ignore(); // clear buffer
             marquee_speed = new_speed;
-            gotoxy(cursorX,cursorY + 1);
+            if(marquee_running)
+                gotoxy(cursorX,cursorY + 1);
             cout << "\x1B[0J" << flush;
             cout << "Speed updated to " << new_speed << " ms.\n";
             isininput = false;
