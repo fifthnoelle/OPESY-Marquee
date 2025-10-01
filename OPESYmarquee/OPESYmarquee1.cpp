@@ -206,6 +206,7 @@ void input() {
             cout << "Exiting program. Goodbye!\n";
             is_running = false;
             marquee_running = false;
+            cout << "\x1B[0J" << flush;
             break;
         }
         else {
